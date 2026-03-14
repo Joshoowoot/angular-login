@@ -1,0 +1,14 @@
+<div class="container-fluid d-flex align-items-center justify-content-center min-vh-100 bg-light">
+  <div class="text-center p-5 bg-white rounded shadow">
+    <h1 class="mb-4">Welcome!</h1>
+    <div class="user-info">
+      <h3>HI {{ email }}</h3>
+      <p class="mt-3">Your password is: {{ password }}</p>
+      
+      <div class="mt-5">
+        <button (click)="goToDashboard()" class="btn btn-info me-3">Go to Dashboard</button>
+        <button (click)="logout()" class="btn btn-danger">Logout</button>
+      </div>
+    </div>
+  </div>
+</div>

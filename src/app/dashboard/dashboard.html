@@ -1,0 +1,53 @@
+<div class="dashboard-wrapper">
+  <div class="dashboard-header">
+    <div class="header-content">
+      <div>
+        <h1 class="header-title">Welcome back, {{ userName }}!</h1>
+        <p class="header-subtitle">Registered Accounts Overview</p>
+      </div>
+      <div class="header-actions">
+        <button (click)="refreshUsersTable()" class="btn btn-outline">Refresh</button>
+        <button (click)="goToHome()" class="btn btn-outline">Home</button>
+        <button (click)="logout()" class="btn btn-danger">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-container">
+    <section class="users-section">
+      <div class="section-header">
+        <h2>All User Accounts</h2>
+        <span class="users-count">Total: {{ users.length }}</span>
+      </div>
+
+      <div class="empty-state" *ngIf="users.length === 0">
+        <p>No user accounts found yet. Register a new account to display it here.</p>
+      </div>
+
+      <div class="table-wrapper" *ngIf="users.length > 0">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>Password</th>
+              <th>Registered At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of users; let index = index">
+              <td>{{ index + 1 }}</td>
+              <td>{{ user.firstName }}</td>
+              <td>{{ user.lastName }}</td>
+              <td>{{ user.email }}</td>
+              <td>{{ user.password }}</td>
+              <td>{{ formatDate(user.registeredAt) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>

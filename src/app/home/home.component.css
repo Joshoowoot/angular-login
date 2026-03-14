@@ -1,0 +1,19 @@
+.user-info {
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+h3 {
+  color: #007bff;
+  font-weight: bold;
+}
+
+p {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.bg-light {
+  background: linear-gradient(to right, #FFFDE4, #005AA7) !important;
+}
