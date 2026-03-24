@@ -3,20 +3,28 @@
     <h1 class="mb-5">LOGIN PAGE</h1>
 
     <div class="d-flex justify-content-center">
-      <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
-        <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        @if (errorMessage) {
+        <div class="alert alert-danger" role="alert">
           {{ errorMessage }}
         </div>
+        }
 
         <div class="mb-3">
           <label class="form-label">Email address</label>
-          <input type="email" class="form-control form-control-sm" [(ngModel)]="email" name="email" #emailModel="ngModel" required email>
+          <input type="email" class="form-control form-control-sm" formControlName="email">
+          @if (submitAttempted && loginForm.controls.email.invalid) {
+          <small class="text-danger">Please enter a valid email</small>
+          }
         </div>
         <div class="mb-3">
           <label class="form-label">Password</label>
-          <input type="password" class="form-control form-control-sm" [(ngModel)]="password" name="password" required>
+          <input type="password" class="form-control form-control-sm" formControlName="password">
+          @if (submitAttempted && loginForm.controls.password.invalid) {
+          <small class="text-danger">Password is required</small>
+          }
         </div>
-        <button type="submit" class="btn btn-primary" [disabled]="!loginForm.valid || emailModel.invalid">Login</button> <br>
+        <button type="submit" class="btn btn-primary">Login</button> <br>
 
         <br>
         <p class="mt-3">

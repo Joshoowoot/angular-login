@@ -1,21 +1,51 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { RegisteredUser, ViewService } from '../services/view.service';
 
 @Component({
   selector: 'app-register',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './register.component.html',
-  styleUrl: './register.component.css'
+  styleUrl: './register.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegisterComponent implements OnInit {
-  firstName: string = '';
-  lastName: string = '';
-  email: string = '';
-  password: string = '';
-  confirmPassword: string = '';
+  readonly registrationForm = new FormGroup(
+    {
+      firstName: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+      lastName: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+      email: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.email],
+      }),
+      password: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.minLength(6)],
+      }),
+      confirmPassword: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+    },
+    { validators: [RegisterComponent.passwordsMatchValidator] }
+  );
+
   registrationSuccess: boolean = false;
+  submitAttempted: boolean = false;
   errorMessage: string = '';
   users: RegisteredUser[] = [];
 
@@ -33,35 +63,49 @@ export class RegisterComponent implements OnInit {
     return password.length >= 6;
   }
 
+  private static passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password')?.value;
+    const confirmPassword = control.get('confirmPassword')?.value;
+
+    if (!password || !confirmPassword) {
+      return null;
+    }
+
+    return password === confirmPassword ? null : { passwordMismatch: true };
+  }
+
   onSubmit() {
-    console.log('[Register] Attempting registration for:', this.email);
+    this.submitAttempted = true;
+    const { firstName, lastName, email, password, confirmPassword } = this.registrationForm.getRawValue();
+
+    console.log('[Register] Attempting registration for:', email);
     this.errorMessage = '';
     this.registrationSuccess = false;
 
-    if (!this.firstName.trim()) {
+    if (!firstName.trim()) {
       console.log('[Register] Validation failed: First name required');
       this.errorMessage = 'First name is required';
       return;
     }
 
-    if (!this.lastName.trim()) {
+    if (!lastName.trim()) {
       this.errorMessage = 'Last name is required';
       return;
     }
 
-    const normalizedEmail = this.email.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
 
     if (!this.isValidEmail(normalizedEmail)) {
       this.errorMessage = 'Please enter a valid email address';
       return;
     }
 
-    if (!this.isValidPassword(this.password)) {
+    if (!this.isValidPassword(password)) {
       this.errorMessage = 'Password must be at least 6 characters long';
       return;
     }
 
-    if (this.password !== this.confirmPassword) {
+    if (password !== confirmPassword) {
       this.errorMessage = 'Passwords do not match';
       return;
     }
@@ -76,10 +120,10 @@ export class RegisterComponent implements OnInit {
     console.log('[Register] Registration successful!');
 
     const userData = {
-      firstName: this.firstName,
-      lastName: this.lastName,
+      firstName,
+      lastName,
       email: normalizedEmail,
-      password: this.password,
+      password,
     };
 
     console.log('[Register] Storing user data:', userData);
@@ -108,11 +152,14 @@ export class RegisterComponent implements OnInit {
   }
 
   private resetForm() {
-    this.firstName = '';
-    this.lastName = '';
-    this.email = '';
-    this.password = '';
-    this.confirmPassword = '';
+    this.registrationForm.reset({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    });
+    this.submitAttempted = false;
     this.registrationSuccess = false;
     this.errorMessage = '';
   }
