@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RegisteredUser, ViewService } from '../services/view.service';
+import { ViewService } from '../services/view.service';
 
 @Component({
   selector: 'app-register',
@@ -9,7 +9,7 @@ import { RegisteredUser, ViewService } from '../services/view.service';
   templateUrl: './register.component.html',
   styleUrl: './register.component.css'
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent {
   firstName: string = '';
   lastName: string = '';
   email: string = '';
@@ -17,13 +17,8 @@ export class RegisterComponent implements OnInit {
   confirmPassword: string = '';
   registrationSuccess: boolean = false;
   errorMessage: string = '';
-  users: RegisteredUser[] = [];
 
   constructor(private viewService: ViewService) {}
-
-  ngOnInit(): void {
-    this.users = this.viewService.getAllRegisteredUsers();
-  }
 
   private isValidEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -84,7 +79,6 @@ export class RegisterComponent implements OnInit {
 
     console.log('[Register] Storing user data:', userData);
     this.viewService.registerUser(userData);
-    this.users = this.viewService.getAllRegisteredUsers();
 
     // Redirect to login after 2 seconds
     setTimeout(() => {
@@ -97,14 +91,6 @@ export class RegisterComponent implements OnInit {
     console.log('[Register] Navigating back to login');
     this.viewService.setView('login');
     this.resetForm();
-  }
-
-  formatDate(dateValue: string): string {
-    const parsedDate = new Date(dateValue);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return 'N/A';
-    }
-    return parsedDate.toLocaleString();
   }
 
   private resetForm() {

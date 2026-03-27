@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
-export type ViewType = 'login' | 'register' | 'home' | 'dashboard';
+export type ViewType = 'login' | 'register' | 'home';
 
 export interface ViewData {
   email?: string;

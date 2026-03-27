@@ -109,32 +109,5 @@
         </p>
       </form>
     </div>
-
-    <!-- Registered Users Table -->
-    <div class="reg-table-section mt-5" *ngIf="users.length > 0">
-      <h5 class="reg-table-title">Registered Accounts ({{ users.length }})</h5>
-      <div class="reg-table-wrapper">
-        <table class="reg-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>First Name</th>
-              <th>Last Name</th>
-              <th>Email</th>
-              
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let user of users; let i = index">
-              <td>{{ i + 1 }}</td>
-              <td>{{ user.firstName }}</td>
-              <td>{{ user.lastName }}</td>
-              <td>{{ user.email }}</td>
-              
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </div>

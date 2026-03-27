@@ -28,9 +28,4 @@ export class HomeComponent implements OnInit {
     this.viewService.clearViewData();
     this.viewService.setView('login');
   }
-
-  goToDashboard() {
-    console.log('[Home] Navigating to dashboard');
-    this.viewService.setView('dashboard');
-  }
 }

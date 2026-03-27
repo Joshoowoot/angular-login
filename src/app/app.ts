@@ -4,12 +4,11 @@ import { CommonModule } from '@angular/common';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { HomeComponent } from './home/home.component';
-import { Dashboard } from './dashboard/dashboard';
 import { ViewService, ViewType } from './services/view.service';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, LoginComponent, RegisterComponent, HomeComponent, Dashboard],
+  imports: [CommonModule, LoginComponent, RegisterComponent, HomeComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -39,9 +38,5 @@ export class App implements OnInit {
 
   isHomeView(): boolean {
     return this.currentView === 'home';
-  }
-
-  isDashboardView(): boolean {
-    return this.currentView === 'dashboard';
   }
 }
