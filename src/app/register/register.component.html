@@ -5,15 +5,19 @@
     <div class="d-flex justify-content-center">
       <form [formGroup]="registrationForm" (ngSubmit)="onSubmit()" class="registration-form">
         
-        @if (registrationSuccess) {
+        @if (registrationSuccess()) {
         <div class="alert alert-success" role="alert">
-          Registration successful! Redirecting to login...
+          @if (isEditMode()) {
+          User updated successfully.
+          } @else {
+          Registration successful.
+          }
         </div>
         }
 
-        @if (errorMessage) {
+        @if (errorMessage()) {
         <div class="alert alert-danger" role="alert">
-          {{ errorMessage }}
+          {{ errorMessage() }}
         </div>
         }
 
@@ -23,7 +27,7 @@
             type="text" 
             class="form-control form-control-sm" 
             formControlName="firstName">
-          @if (submitAttempted && registrationForm.controls.firstName.invalid) {
+          @if (submitAttempted() && registrationForm.controls.firstName.invalid) {
           <small class="text-danger">
             First name is required
           </small>
@@ -36,7 +40,7 @@
             type="text" 
             class="form-control form-control-sm" 
             formControlName="lastName">
-          @if (submitAttempted && registrationForm.controls.lastName.invalid) {
+          @if (submitAttempted() && registrationForm.controls.lastName.invalid) {
           <small class="text-danger">
             Last name is required
           </small>
@@ -49,7 +53,7 @@
             type="email" 
             class="form-control form-control-sm" 
             formControlName="email">
-          @if (submitAttempted && registrationForm.controls.email.invalid) {
+          @if (submitAttempted() && registrationForm.controls.email.invalid) {
           <small class="text-danger">
             Please enter a valid email
           </small>
@@ -62,7 +66,7 @@
             type="password" 
             class="form-control form-control-sm" 
             formControlName="password">
-          @if (submitAttempted && registrationForm.controls.password.invalid) {
+          @if (submitAttempted() && registrationForm.controls.password.invalid) {
           <small class="text-danger">
             Password must be at least 6 characters
           </small>
@@ -75,12 +79,12 @@
             type="password" 
             class="form-control form-control-sm" 
             formControlName="confirmPassword">
-          @if (submitAttempted && registrationForm.controls.confirmPassword.invalid) {
+          @if (submitAttempted() && registrationForm.controls.confirmPassword.invalid) {
           <small class="text-danger">
             Please confirm your password
           </small>
           }
-          @if (submitAttempted && registrationForm.hasError('passwordMismatch')) {
+          @if (submitAttempted() && registrationForm.hasError('passwordMismatch')) {
           <small class="text-danger d-block">
             Passwords do not match
           </small>
@@ -90,9 +94,18 @@
         <button 
           type="submit" 
           class="btn btn-primary" 
-          [disabled]="registrationSuccess">
-          Register
+          [disabled]="registrationSuccess()">
+          {{ submitButtonLabel() }}
         </button>
+
+        @if (isEditMode()) {
+        <button 
+          type="button" 
+          class="btn btn-secondary mt-2"
+          (click)="cancelEdit()">
+          Cancel Edit
+        </button>
+        }
 
         <br>
 
@@ -103,9 +116,9 @@
       </form>
     </div>
 
-    @if (users.length > 0) {
+    @if (users().length > 0) {
     <div class="reg-table-section mt-5">
-      <h5 class="reg-table-title">Registered Accounts ({{ users.length }})</h5>
+      <h5 class="reg-table-title">Registered Accounts ({{ users().length }})</h5>
       <div class="reg-table-wrapper">
         <table class="reg-table">
           <thead>
@@ -114,17 +127,22 @@
               <th>First Name</th>
               <th>Last Name</th>
               <th>Email</th>
-              
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            @for (user of users; track user.email; let i = $index) {
+            @for (user of users(); track user.email; let i = $index) {
             <tr>
               <td>{{ i + 1 }}</td>
               <td>{{ user.firstName }}</td>
               <td>{{ user.lastName }}</td>
               <td>{{ user.email }}</td>
-              
+              <td>
+                <div class="table-action-group">
+                  <button type="button" class="btn btn-sm btn-warning" (click)="startEdit(user)">Edit</button>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="deleteUser(user)">Delete</button>
+                </div>
+              </td>
             </tr>
             }
           </tbody>

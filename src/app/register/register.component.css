@@ -56,6 +56,14 @@
   cursor: not-allowed;
 }
 
+.registration-form .btn-secondary {
+  background-color: #6c757d;
+}
+
+.registration-form .btn-secondary:hover {
+  background-color: #5a6268;
+}
+
 .registration-form a {
   color: #667eea;
   cursor: pointer;
@@ -142,4 +150,9 @@
 
 .reg-table tbody tr:hover {
   background: rgba(102, 126, 234, 0.1);
+}
+
+.table-action-group {
+  display: flex;
+  gap: 0.35rem;
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -8,6 +8,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { RegistrationPayload } from '../models/registered-user.model';
 import { RegisteredUser, ViewService } from '../services/view.service';
 
 @Component({
@@ -18,6 +19,8 @@ import { RegisteredUser, ViewService } from '../services/view.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegisterComponent implements OnInit {
+  private readonly viewService = inject(ViewService);
+
   readonly registrationForm = new FormGroup(
     {
       firstName: new FormControl('', {
@@ -44,15 +47,17 @@ export class RegisterComponent implements OnInit {
     { validators: [RegisterComponent.passwordsMatchValidator] }
   );
 
-  registrationSuccess: boolean = false;
-  submitAttempted: boolean = false;
-  errorMessage: string = '';
-  users: RegisteredUser[] = [];
+  readonly registrationSuccess = signal(false);
+  readonly submitAttempted = signal(false);
+  readonly errorMessage = signal('');
+  readonly users = signal<RegisteredUser[]>([]);
+  readonly isEditMode = signal(false);
+  readonly submitButtonLabel = computed(() => (this.isEditMode() ? 'Update User' : 'Register'));
 
-  constructor(private viewService: ViewService) {}
+  private editingEmail: string | null = null;
 
   ngOnInit(): void {
-    this.users = this.viewService.getAllRegisteredUsers();
+    this.loadUsers();
   }
 
   private isValidEmail(email: string): boolean {
@@ -75,72 +80,123 @@ export class RegisterComponent implements OnInit {
   }
 
   onSubmit() {
-    this.submitAttempted = true;
+    this.submitAttempted.set(true);
     const { firstName, lastName, email, password, confirmPassword } = this.registrationForm.getRawValue();
 
     console.log('[Register] Attempting registration for:', email);
-    this.errorMessage = '';
-    this.registrationSuccess = false;
+    this.errorMessage.set('');
+    this.registrationSuccess.set(false);
 
     if (!firstName.trim()) {
       console.log('[Register] Validation failed: First name required');
-      this.errorMessage = 'First name is required';
+      this.errorMessage.set('First name is required');
       return;
     }
 
     if (!lastName.trim()) {
-      this.errorMessage = 'Last name is required';
+      this.errorMessage.set('Last name is required');
       return;
     }
 
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!this.isValidEmail(normalizedEmail)) {
-      this.errorMessage = 'Please enter a valid email address';
+      this.errorMessage.set('Please enter a valid email address');
       return;
     }
 
     if (!this.isValidPassword(password)) {
-      this.errorMessage = 'Password must be at least 6 characters long';
+      this.errorMessage.set('Password must be at least 6 characters long');
       return;
     }
 
     if (password !== confirmPassword) {
-      this.errorMessage = 'Passwords do not match';
+      this.errorMessage.set('Passwords do not match');
       return;
     }
 
-    if (this.viewService.isEmailRegistered(normalizedEmail)) {
-      this.errorMessage = 'This email is already registered. Please login instead.';
-      return;
-    }
-
-    // Registration successful
-    this.registrationSuccess = true;
-    console.log('[Register] Registration successful!');
-
-    const userData = {
+    const userData: RegistrationPayload = {
       firstName,
       lastName,
       email: normalizedEmail,
       password,
     };
 
-    console.log('[Register] Storing user data:', userData);
-    this.viewService.registerUser(userData);
-    this.users = this.viewService.getAllRegisteredUsers();
+    if (this.isEditMode()) {
+      if (!this.editingEmail) {
+        this.errorMessage.set('Cannot update because no user is selected for editing.');
+        return;
+      }
 
-    // Redirect to login after 2 seconds
-    setTimeout(() => {
-      this.viewService.setView('login', { email: normalizedEmail });
+      const updateResult = this.viewService.updateRegisteredUser(this.editingEmail, userData);
+      if (!updateResult.success) {
+        this.errorMessage.set(updateResult.message);
+        return;
+      }
+
+      this.registrationSuccess.set(true);
+      this.loadUsers();
       this.resetForm();
-    }, 2000);
+      return;
+    }
+
+    if (this.viewService.isEmailRegistered(normalizedEmail)) {
+      this.errorMessage.set('This email is already registered. Please login instead.');
+      return;
+    }
+
+    console.log('[Register] Storing user data:', userData);
+    this.viewService.createRegisteredUser(userData);
+    this.registrationSuccess.set(true);
+    this.loadUsers();
+    this.resetForm();
   }
 
   goToLogin() {
     console.log('[Register] Navigating back to login');
     this.viewService.setView('login');
     this.resetForm();
+  }
+
+  startEdit(user: RegisteredUser): void {
+    this.isEditMode.set(true);
+    this.editingEmail = user.email;
+    this.submitAttempted.set(false);
+    this.registrationSuccess.set(false);
+    this.errorMessage.set('');
+
+    this.registrationForm.setValue({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: user.password,
+      confirmPassword: user.password,
+    });
+  }
+
+  cancelEdit(): void {
+    this.resetForm();
+  }
+
+  deleteUser(user: RegisteredUser): void {
+    const shouldDelete = window.confirm(`Delete user ${user.email}?`);
+    if (!shouldDelete) {
+      return;
+    }
+
+    const isDeleted = this.viewService.deleteRegisteredUser(user.email);
+    if (!isDeleted) {
+      this.errorMessage.set('Unable to delete user. Please refresh and try again.');
+      return;
+    }
+
+    if (this.editingEmail === user.email) {
+      this.resetForm();
+    }
+
+    this.registrationSuccess.set(false);
+    this.errorMessage.set('');
+    this.loadUsers();
   }
 
   formatDate(dateValue: string): string {
@@ -159,8 +215,14 @@ export class RegisterComponent implements OnInit {
       password: '',
       confirmPassword: '',
     });
-    this.submitAttempted = false;
-    this.registrationSuccess = false;
-    this.errorMessage = '';
+    this.submitAttempted.set(false);
+    this.registrationSuccess.set(false);
+    this.errorMessage.set('');
+    this.isEditMode.set(false);
+    this.editingEmail = null;
+  }
+
+  private loadUsers(): void {
+    this.users.set(this.viewService.getAllRegisteredUsers());
   }
 }

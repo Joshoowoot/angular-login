@@ -1,5 +1,10 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import {
+  RegisteredUserData,
+  RegisteredUserModel,
+  RegistrationPayload,
+} from '../models/registered-user.model';
 
 export type ViewType = 'login' | 'register' | 'home' | 'dashboard';
 
@@ -9,13 +14,7 @@ export interface ViewData {
   [key: string]: any;
 }
 
-export interface RegisteredUser {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  registeredAt: string;
-}
+export type RegisteredUser = RegisteredUserData;
 
 @Injectable({
   providedIn: 'root'
@@ -59,15 +58,14 @@ export class ViewService {
     this.viewDataSubject.next({});
   }
 
-  registerUser(user: Omit<RegisteredUser, 'registeredAt'>): void {
-    const normalizedEmail = user.email.trim().toLowerCase();
-    const dataToStore: RegisteredUser = {
-      ...user,
-      email: normalizedEmail,
-      registeredAt: new Date().toISOString(),
-    };
+  createRegisteredUser(payload: RegistrationPayload): RegisteredUser {
+    const model = RegisteredUserModel.createNew(payload);
+    this.saveUserModel(model);
+    return model.toData();
+  }
 
-    localStorage.setItem(this.getUserStorageKey(normalizedEmail), JSON.stringify(dataToStore));
+  registerUser(user: Omit<RegisteredUser, 'registeredAt'>): void {
+    this.createRegisteredUser(user);
   }
 
   getRegisteredUser(email: string): RegisteredUser | null {
@@ -78,15 +76,58 @@ export class ViewService {
       return null;
     }
 
-    try {
-      return JSON.parse(rawData) as RegisteredUser;
-    } catch {
-      return null;
-    }
+    const parsedModel = RegisteredUserModel.fromStorage(rawData);
+    return parsedModel ? parsedModel.toData() : null;
   }
 
   isEmailRegistered(email: string): boolean {
     return this.getRegisteredUser(email) !== null;
+  }
+
+  updateRegisteredUser(originalEmail: string, payload: RegistrationPayload): { success: boolean; message: string } {
+    const currentUser = this.getRegisteredUser(originalEmail);
+
+    if (!currentUser) {
+      return {
+        success: false,
+        message: 'Unable to update. User record was not found.',
+      };
+    }
+
+    const nextEmail = payload.email.trim().toLowerCase();
+    const normalizedOriginalEmail = originalEmail.trim().toLowerCase();
+
+    if (nextEmail !== normalizedOriginalEmail && this.isEmailRegistered(nextEmail)) {
+      return {
+        success: false,
+        message: 'Cannot update. The new email is already registered by another account.',
+      };
+    }
+
+    const updatedModel = RegisteredUserModel.fromData(currentUser).update(payload);
+
+    if (nextEmail !== normalizedOriginalEmail) {
+      localStorage.removeItem(this.getUserStorageKey(normalizedOriginalEmail));
+    }
+
+    this.saveUserModel(updatedModel);
+
+    return {
+      success: true,
+      message: 'User updated successfully.',
+    };
+  }
+
+  deleteRegisteredUser(email: string): boolean {
+    const normalizedEmail = email.trim().toLowerCase();
+    const storageKey = this.getUserStorageKey(normalizedEmail);
+
+    if (!localStorage.getItem(storageKey)) {
+      return false;
+    }
+
+    localStorage.removeItem(storageKey);
+    return true;
   }
 
   getAllRegisteredUsers(): RegisteredUser[] {
@@ -104,12 +145,10 @@ export class ViewService {
         continue;
       }
 
-      try {
-        const parsedUser = JSON.parse(rawData) as RegisteredUser;
-        if (parsedUser.email) {
-          users.push(parsedUser);
-        }
-      } catch {
+      const userModel = RegisteredUserModel.fromStorage(rawData);
+      if (userModel) {
+        users.push(userModel.toData());
+      } else {
         // Ignore malformed user records and continue loading valid accounts.
       }
     }
@@ -142,5 +181,10 @@ export class ViewService {
 
   private getUserStorageKey(email: string): string {
     return `${this.userStoragePrefix}${email}`;
+  }
+
+  private saveUserModel(model: RegisteredUserModel): void {
+    const user = model.toData();
+    localStorage.setItem(this.getUserStorageKey(model.storageKey), JSON.stringify(user));
   }
 }
